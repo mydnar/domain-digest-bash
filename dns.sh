@@ -7,76 +7,51 @@ C2='\033[0;36m' #color2 == Cyan                         #
 C3='\033[0;31m' #color3 == Red                          # 30 Black | 31 Red | 32 Green | 33 Yellow
 NC='\033[0m'    #nocolor == back to default font color  # 34 Blue | 35 Magenta | 36 Cyan | 37 Grey
 
-dig_info (){
-    if [ -z "$NS" ] && [ -z "$WHO" ] && [ -z "$DIG" ]; then
-        echo -e "\n${C3}No results available. Make sure domain is valid.\n${NC}"
-        exit
-    elif ([ -z "$NS" ] && [ -z "$WHO" ] && [ "$DIG" ]) || ([ -z "$WHO" ] && [ "$CNAME" ]); then
-        SUBDOMAIN="$1"
-        DOMAIN=${SUBDOMAIN#*.}
-        echo -e  "\n${C3}<----- Subdomain Results ----->\n${C1}\nA|CNAME records for $SUBDOMAIN:${NC}\n"
-        echo $SUBDOMAIN > ~/.diga1.tmp
-        dig $SUBDOMAIN +short > ~/.diga2.tmp
-        pr -m -t -w 70 ~/.diga1.tmp ~/.diga2.tmp
-        rm ~/.diga1.tmp ~/.diga2.tmp
-        echo -e  "\n${C3}*** Root Domain Info Below ***\n\n${C1}NS records for ${DOMAIN}:${NC}\n"
-        NS=$(dig ${DOMAIN} ns +short)
-        NSIP=$(dig ${NS} +short)
-        echo -e "${NS}" > ~/.ns.tmp
-        echo -e "${NSIP}" > ~/.nsip.tmp
-        pr -m -t -w 70 ~/.ns.tmp ~/.nsip.tmp
-        rm ~/.ns.tmp ~/.nsip.tmp
-    elif [ -z "${NS}" ] && [ "${WHO}" ]; then
+dig_info() {
+    local DOMAIN="$1"
+    local SUBDOMAIN="${DOMAIN%%.*}"
+    local NS=""
+    local NSIP=""
+    local CNAME=""
+    local DIGA=""
+    local DIGW=""
+    local MX=""
+    local MXIP=""
+    local DIGT=""
+    
+    NS=$(dig ${DOMAIN} ns +short | tr '\n' ' ')
+    if [ -z "${NS}" ]; then
         echo -e  "\n${C3}<----- Domain Results ----->\n\n${C2}**No NS records found for ${DOMAIN}**${NC}"
+        return
+    fi
+    
+    NSIP=$(dig ${NS} +short | tr '\n' ' ')
+    echo -e  "\n${C3}<----- Domain Results ----->\n\n${C1}NS records for ${DOMAIN}:${NC}\n${NS}\n${NSIP}${NC}"
+    
+    CNAME=$(dig ${DOMAIN} cname +short | tr '\n' ' ')
+    if [ "${CNAME}" ]; then
+        echo -e  "\n${C1}CNAME records for ${DOMAIN}:\n${NC}${CNAME}${NC}"
     else
-        echo -e  "\n${C3}<----- Domain Results ----->\n\n${C1}NS records for ${DOMAIN}:${NC}\n"
-        NSIP=$(dig ${NS} +short)
-        echo -e "${NS}" > ~/.ns.tmp
-        echo -e "${NSIP}" > ~/.nsip.tmp
-        pr -m -t -w 70 ~/.ns.tmp ~/.nsip.tmp
-        rm ~/.ns.tmp ~/.nsip.tmp
-        echo -e  "${C1}\nA|CNAME records for ${DOMAIN}:${NC}\n"
-        DIGA=$(dig ${DOMAIN} +short)
-        DIGW=$(dig www.${DOMAIN} +short)
-        if [ -z "${DIGA}" ] && [ -z "${DIGW}" ]; then
-            echo -e "No records found"
-        else
-            if [ "${DIGA}" ]; then
-                echo -e "${DOMAIN}" > ~/.diga1.tmp
-                echo -e "${DIGA}" > ~/.diga2.tmp
-                pr -m -t -w 70 ~/.diga1.tmp ~/.diga2.tmp
-                rm ~/.diga1.tmp ~/.diga2.tmp
-            fi
-            if [ "${DIGW}" ]; then
-                echo -e "www.${DOMAIN}" > ~/.diga1.tmp
-                echo -e "${DIGW}" > ~/.diga2.tmp
-                echo -e
-                pr -m -t -w 70 ~/.diga1.tmp ~/.diga2.tmp
-                rm ~/.diga1.tmp ~/.diga2.tmp
-            fi
+        DIGA=$(dig ${DOMAIN} a +short | tr '\n' ' ')
+        if [ "${DIGA}" ]; then
+            echo -e  "\n${C1}A records for ${DOMAIN}:${NC}\n${DIGA}${NC}"
         fi
-        echo -e  "${C1}\nMX records for ${DOMAIN}:${NC}\n"
-        MX=$(dig ${DOMAIN} mx +short)
-        if [ -z "${MX}" ]; then
-            echo -e  "No records found"
-        else
-            MXIP=$(dig ${MX} +short)
-            echo -e "${MX}" > ~/.mx.tmp
-            echo -e "${MXIP}" > ~/.mxip.tmp
-            MX2=$(head -1 ~/.mx.tmp | wc -c)
-            if [[ "${MX2}" -gt 34 ]] && [[ "${MX2}" -lt 55 ]]; then
-                pr -m -t -w 110 ~/.mx.tmp ~/.mxip.tmp
-            elif [[ "${MX2}" -ge 55 ]]; then
-                pr -m -t -w 130 ~/.mx.tmp ~/.mxip.tmp
-            else
-                pr -m -t -w 70 ~/.mx.tmp ~/.mxip.tmp
-            fi
-            rm ~/.mx.tmp ~/.mxip.tmp
-        fi
-        DIGT=$(dig ${DOMAIN} txt +short)
-        if [ "${DIGT}" ]; then
-            echo -e  "${C1}\nTXT records for ${DOMAIN}:${NC}\n\n${DIGT}"
-        fi
+    fi
+    
+    DIGW=$(dig www.${DOMAIN} a +short | tr '\n' ' ')
+    if [ "${DIGW}" ]; then
+        echo -e  "${C1}\nA records for www.${DOMAIN}:${NC}\n${DIGW}${NC}"
+    fi
+    
+    MX=$(dig ${DOMAIN} mx +short | cut -d' ' -f2)
+    if [ "${MX}" ]; then
+        MXIP=$(dig ${MX} +short | tr '\n' ' ')
+        echo -e  "${C1}\nMX records for ${DOMAIN}:${NC}\n${MX}\n${MXIP}${NC}"
+    fi
+    
+    DIGT=$(dig ${DOMAIN} txt +short)
+    if [ "${DIGT}" ]; then
+        echo -e  "${C1}\nTXT records for ${DOMAIN}:${NC}\n\n${DIGT}"
     fi
 }
 
