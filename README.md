@@ -15,11 +15,11 @@ Domain Digest is a command-line tool that parses WHOIS and DNS data and prints a
 
   ```export PATH="$HOME/bin:$PATH"```
 
-- After adding the line, you can either open a new terminal window or run `source <path to configuration file>` to apply the changes to your current terminal session.
+- After adding the line, you can open a new terminal window or run `source <path to configuration file>` to apply the changes to your current terminal session.
 
 #### 4. Download the script to the ~/bin directory and make it executable
 ```
-$ curl -o ~/bin/dns.sh https://raw.githubusercontent.com/username/repo/master/dns.sh
+$ curl -o ~/bin/dns.sh https://raw.githubusercontent.com/mydnar/domain-digest-bash/main/dns.sh
 $ chmod +x ~/bin/dns.sh
 ```
 ## Usage
